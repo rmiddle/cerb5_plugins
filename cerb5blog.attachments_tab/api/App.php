@@ -14,19 +14,19 @@ class Cerb5BlogAttachementsTicketTab extends Extension_TicketTab {
 //		$tpl->assign('response_uri', 'config/attachments');
 
 		$defaults = new C4_AbstractViewModel();
-		$defaults->class_name = 'C4_AttachmentView';
+		$defaults->class_name = 'View_Attachment';
 		$defaults->name = 'Attachements View';
 		$defaults->id = 'ticket_view_attachements';
 		$defaults->renderLimit = 15;
 
-		$view_attachements = C4_AbstractViewLoader::getView('ticket_view_attachements', $defaults);
-		$view_attachements->params = array(
+		$view = C4_AbstractViewLoader::getView($defaults->id, $defaults);
+		$view->params = array(
 			SearchFields_Attachment::TICKET_ID => new DevblocksSearchCriteria(SearchFields_Attachment::TICKET_ID,DevblocksSearchCriteria::OPER_EQ,$ticket_id)
 		);
-		$view_attachements->renderPage = 0;
-		C4_AbstractViewLoader::setView($view_attachements->id,$view_attachements);
+		$view->renderPage = 0;
+		C4_AbstractViewLoader::setView($view->id,$view);
 	
-		$tpl->assign('view_attachements', $view_attachements);
+		$tpl->assign('view', $view);
 		
 		$tpl->display('file:' . $tpl_path . 'attachments/index.tpl');
 	}
