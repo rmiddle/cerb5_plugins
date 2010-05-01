@@ -1,25 +1,27 @@
 <!DOCTYPE plugin SYSTEM "../../libs/devblocks/plugin.dtd">
 <plugin>
-  <id>cerb5blog.purge_contact_addresses</id>
-  <name>[cerb5blog] Purge Contact Addresses</name>
-  <description>Purge contact addresses that are no longer connected to any tickets</description>
-  <author>Robert Middleswarth</author>
-  <revision>3</revision>
-  <link>http://www.cerb5blog.com</link>
+	<id>cerb5blog.purge_contact_addresses</id>
+	<name>[cerb5blog] Purge Contact Addresses</name>
+	<description>Purge contact addresses that are no longer connected to any tickets</description>
+	<author>Robert Middleswarth</author>
+	<revision>3</revision>
+	<link>http://www.cerb5blog.com</link>
+	<image>plugin.png</image>
 
+	<!-- Plugin Dependencies -->
+	
+	<dependencies>
+		<require plugin_id="cerberusweb.core" version="5.0.0-beta" />
+	</dependencies>
+
+	<!-- Patches -->
+	
+	<patches>
+		<patch version="4.2.3" revision="3" file="patches/4.2.3.php" />
+	</patches>
+
+	
 <extensions>
-    <!-- Patch Containers  -->
-    <extension point="devblocks.patch.container">
-      <id>cerb5blog.pca.patches</id>
-      <name>[cerb5blog] Purge Contact Addresses Patches</name>
-      <class>
-        <file>api/Patch.php</file>
-        <name>Cerb5BlogPurgeContactAddressesPatchContainer</name>
-      </class>
-      <params>
-      </params>
-    </extension>
-
     <!-- Event Listeners -->
     <extension point="devblocks.listener.event">
       <id>acerb5blog.purge_contact_addresses.listener.core</id>
