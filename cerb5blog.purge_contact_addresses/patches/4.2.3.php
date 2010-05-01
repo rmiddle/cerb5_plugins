@@ -4,7 +4,7 @@ $tables = $db->metaTables();
 
 // ===========================================================================
 // Add index to message.address_id to make this purge works well.
-echo "Patch file ran";
+
 list($columns, $indexes) = $db->metaTable('message');
 
 if(!isset($indexes['address_id'])) {

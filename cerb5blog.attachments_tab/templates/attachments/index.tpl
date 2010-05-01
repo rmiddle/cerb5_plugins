@@ -1,2 +1,2 @@
-<div id="view{$view_attachements->id}">{$view_attachements->render()}</div>
+<div id="view{$view->id}">{$view->render()}</div>
 

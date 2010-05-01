@@ -1,7 +1,7 @@
 <!DOCTYPE plugin SYSTEM "../../libs/devblocks/plugin.dtd">
 <plugin>
 	<id>cerb5blog.purge_contact_addresses</id>
-	<name>[cerb5blog] Purge Contact Addresses</name>
+	<name>[Cerb5blog.com] Purge Contact Addresses</name>
 	<description>Purge contact addresses that are no longer connected to any tickets</description>
 	<author>Robert Middleswarth</author>
 	<revision>3</revision>
@@ -25,7 +25,7 @@
     <!-- Event Listeners -->
     <extension point="devblocks.listener.event">
       <id>cerb5blog.purge_contact_addresses.listener.core</id>
-      <name>[cerb5blog] Purge Contact Addresses</name>
+      <name>[Cerb5blog.com] Purge Contact Addresses</name>
       <class>
         <file>api/App.php</file>
         <name>Cerb5BlogPurgeContactAddressesEventListener</name>
