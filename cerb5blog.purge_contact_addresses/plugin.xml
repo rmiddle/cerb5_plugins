@@ -17,14 +17,14 @@
 	<!-- Patches -->
 	
 	<patches>
-		<patch version="5.0.0" revision="4" file="patches/5.0.0.php" />
+		<patch version="4.2.3" revision="6" file="patches/4.2.3.php" />
 	</patches>
 
 	
 <extensions>
     <!-- Event Listeners -->
     <extension point="devblocks.listener.event">
-      <id>acerb5blog.purge_contact_addresses.listener.core</id>
+      <id>cerb5blog.purge_contact_addresses.listener.core</id>
       <name>[cerb5blog] Purge Contact Addresses</name>
       <class>
         <file>api/App.php</file>

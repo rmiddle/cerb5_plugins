@@ -8,7 +8,7 @@
 <input type="hidden" name="c" value="config">
 <input type="hidden" name="a" value="handleTabAction">
 <input type="hidden" name="tab" value="cerb5blog.last_action_and_audit_log.config.tab">
-<input type="hidden" name="action" value="saveAnswernet">
+<input type="hidden" name="action" value="saveCerb5BlogAuditLog">
 
 <h2>{$translate->_('cerb5blog.last_action_and_audit_log.config.tab.audit.log')}</h2><br>
 
@@ -43,7 +43,7 @@
 *}
 <br>
 <br>
-<button type="button" id="btnSubmit" onclick="genericAjaxPost('configActivity', 'feedback');"><img src="{devblocks_url}c=resource&p=cerberusweb.core&f=images/check.gif{/devblocks_url}" align="top"> {$translate->_('common.save_changes')|capitalize}</button>
+<button type="button" id="btnSubmit" onclick="genericAjaxPost('configActivity', 'feedback');"><span class="cerb-sprite sprite-check"></span> {$translate->_('common.save_changes')|capitalize}</button>
 </form>
 <br>
 <br>

@@ -34,7 +34,7 @@ class Cerb5BlogLastActionAndAuditLogConfigTab extends Extension_ConfigTab {
 		$tpl->display('file:' . $tpl_path . 'config.tpl');
 	}
 
-	function saveCerb5BlogAction() {
+	function saveCerb5BlogAuditLogAction() {
 		$settings = DevblocksPlatform::getPluginSettingsService();
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl_path = dirname(dirname(__FILE__)) . '/templates/';
