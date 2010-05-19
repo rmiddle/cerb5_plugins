@@ -156,8 +156,8 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 		$mailer = null; // lazy load
     		
 		$settings = DevblocksPlatform::getPluginSettingsService();
-		@$default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM,CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
-		@$default_personal = DevblocksPlatform::importGPC($_POST['default_reply_personal'],'string',$settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL,CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL));
+		$default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM, CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
+		$default_personal = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL, CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL);
 
 		// Loop through all assigned tickets
 		$tickets = DAO_Ticket::getTickets($ticket_ids);
@@ -166,8 +166,6 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 			if($ticket->next_worker_id == $next_worker_id)
 				continue;
 			
-			// (Action) Forward Email To:
-
 			// Sanitize and combine all the destination addresses
 			$next_worker = DAO_Worker::get($next_worker_id);
 			$notify_emails = $next_worker->email;
