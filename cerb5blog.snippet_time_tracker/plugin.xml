@@ -1,6 +1,6 @@
 <!DOCTYPE plugin SYSTEM "../../libs/devblocks/plugin.dtd">
 <plugin>
-	<id>cerb5blog.snippets_time_tracker</id>
+	<id>cerb5blog.snippets.time_tracker</id>
 	<name>[Cerb5blog.com]: Add Time Tracker to snippets</name>
 	<description>Add time tracking info to ticket snippets.</description>
 	<author>Robert Middleswarth</author>
@@ -14,13 +14,15 @@
 		<require plugin_id="cerberusweb.core" version="5.0.0" />
 	</dependencies>
 
+	<extensions>
+	
 		<!-- Snippet tokens -->
 		
 		<extension point="cerberusweb.snippet.token">
 			<id>cerb5blog.snippet.token.time_tracker</id>
 			<name>Time tracking Total Min</name>
 			<class>
-				<file>plugin.php</file>
+				<file>api/App.php</file>
 				<name>Cerb5BlogSnippetTokenTimeTracker</name>
 			</class>
 			<params>
