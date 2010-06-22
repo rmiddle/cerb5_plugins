@@ -1,6 +1,6 @@
 <!DOCTYPE plugin SYSTEM "../../libs/devblocks/plugin.dtd">
 <plugin>
-	<id>cerb5blog.snippets.time_tracker</id>
+	<id>cerb5blog.snippets_time_tracker</id>
 	<name>[Cerb5blog.com]: Add Time Tracker to snippets</name>
 	<description>Add time tracking info to ticket snippets.</description>
 	<author>Robert Middleswarth</author>
@@ -27,13 +27,10 @@
 			</class>
 			<params>
 				<param key="token" value="time_tracker_min_total" />
-				<param key="label" value="cerb5blog.snippet.token.time_tracker.label" />
+				<param key="label" value="Total Time tracked Min" />
 				<param key="contexts">
 					<value>
-						<data key="cerberusweb.snippets.address" />
-						<data key="cerberusweb.snippets.org" />
-						<data key="cerberusweb.snippets.ticket" />
-						<data key="cerberusweb.snippets.worker" />
+						<data key="cerberusweb.contexts.ticket" />
 					</value>
 				</param>
 			</params>

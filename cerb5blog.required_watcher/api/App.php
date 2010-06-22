@@ -53,7 +53,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 		@$default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM,CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
 		@$default_personal = DevblocksPlatform::importGPC($_POST['default_reply_personal'],'string',$settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL,CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL));
 
-		if(null == ($ticket = DAO_Ticket::getTicket($ticket_id)))
+		if(null == ($ticket = DAO_Ticket::get($ticket_id)))
 			return;
 
 		// (Action) Forward E-mail:
@@ -225,7 +225,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 				$result = $mailer->send($mail);
 					
 			} catch(Exception $e) {
-				if(!empty($message_id)) {
+/*				if(!empty($message_id)) {
 					$fields = array(
 						DAO_MessageNote::MESSAGE_ID => $message_id,
 						DAO_MessageNote::CREATED => time(),
@@ -235,6 +235,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 					);
 					DAO_MessageNote::create($fields);
 				}
+*/
 			}
 		}
 	}
@@ -245,7 +246,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
     	
 		$url_writer = DevblocksPlatform::getUrlService();
 		
-		$ticket = DAO_Ticket::getTicket($ticket_id);
+		$ticket = DAO_Ticket::get($ticket_id);
 
 		// (Action) Forward Email To:
 		
@@ -257,7 +258,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 			return;
 		
 		// [TODO] This could be more efficient
-		$messages = DAO_Ticket::getMessagesByTicket($ticket_id);
+		$messages = DAO_Message::getMessagesByTicket($ticket_id);
 		$message = end($messages); // last message
 		unset($messages);
 		$headers = $message->getHeaders();

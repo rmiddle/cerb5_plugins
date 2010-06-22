@@ -20,10 +20,11 @@ class Cerb5BlogAttachementsTicketTab extends Extension_TicketTab {
 		$defaults->renderLimit = 15;
 
 		$view = C4_AbstractViewLoader::getView($defaults->id, $defaults);
-		$view->params = array(
+		$view->addParams(array(
 			SearchFields_Attachment::TICKET_ID => new DevblocksSearchCriteria(SearchFields_Attachment::TICKET_ID,DevblocksSearchCriteria::OPER_EQ,$ticket_id)
-		);
+		), true);
 		$view->renderPage = 0;
+		
 		C4_AbstractViewLoader::setView($view->id,$view);
 	
 		$tpl->assign('view', $view);
