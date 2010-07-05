@@ -122,7 +122,7 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
 		$uf_comment_enabled = intval($settings->get('cerb5blog.last_action_and_audit_log','uf_comment_enabled', 0));
 		if($uf_comment_enabled) {
 			$change_fields[DAO_Ticket::UPDATED_DATE] = time();
-			DAO_Ticket::updateTicket($ticket_id, $change_fields);
+			DAO_Ticket::update($ticket_id, $change_fields);
 			unset($change_fields);
 		}
 	}
@@ -152,7 +152,7 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
 		if (class_exists('DAO_TicketAuditLog',true)):
 			if($al_merge_enabled) {
 				foreach($old_ticket_ids as $old_id) {
-					$old_ticket = DAO_Ticket::getTicket($old_id);
+					$old_ticket = DAO_Ticket::get($old_id);
 					$translate_str = $translate->_('cerb5blog.last_action_and_audit_log.post.merge.new_ticket');
 					$translated = sprintf($translate_str,$old_id, $old_ticket->mask);
 
@@ -171,7 +171,7 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
 
 		if($uf_merge_enabled) {
 			$new_change_fields[DAO_Ticket::UPDATED_DATE] = time();
-			DAO_Ticket::updateTicket($new_ticket_id, $new_change_fields);
+			DAO_Ticket::update($new_ticket_id, $new_change_fields);
 			unset($new_change_fields);
 		}
 	}
