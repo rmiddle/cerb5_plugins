@@ -9,234 +9,185 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 	 */
 	function handleEvent(Model_DevblocksEvent $event) {
 		switch($event->id) {
-			case 'ticket.property.pre_change':
+			case 'context_link.assigned':
 				$this->_workerAssigned($event);
 				break;
-			case 'ticket.comment.create':
-				$this->_newTicketComment($event);
-				break;
 			case 'ticket.reply.inbound':
-				$this->_sendForwards($event, true);
+				//$this->_sendForwards($event, true);
 				break;
 			case 'ticket.reply.outbound':
-				$this->_sendForwards($event, false);
+				//$this->_sendForwards($event, false);
 				break;
 		}
 	}
 
-	private function _newTicketComment($event) {
-		@$comment_id = $event->params['comment_id'];
-		@$ticket_id = $event->params['ticket_id'];
-		@$address_id = $event->params['address_id'];
-		@$comment = $event->params['comment'];
-    	
-		if(empty($ticket_id) || empty($address_id) || empty($comment))
-			return;
-    		
-		// Resolve the address ID
-		if(null == ($address = DAO_Address::get($address_id)))
-			return;
-			
-		// Try to associate the author with a worker
-		if(null == ($worker_addy = DAO_AddressToWorker::getByAddress($address->email)))
-			return;
-				
-		if(null == ($worker = DAO_Worker::get($worker_addy->worker_id)))
-			return;
-			
-		$url_writer = DevblocksPlatform::getUrlService();
+	private function _workerAssigned($event) {
+		$context = $event->params['context'];
+ 		
+        switch($context) {
+			case CerberusContexts::CONTEXT_TICKET:
+				$this->_workerAssignedTicket($event);
+				break;
+            case CerberusContexts::CONTEXT_TASK:
+				$this->_workerAssignedTask($event);
+				break;
+    	}	
+    }
+    
+	private function _workerAssignedTicket($event) {
+		$translate = DevblocksPlatform::getTranslationService();
+		$events = DevblocksPlatform::getEventService();
 
-		$mail_service = DevblocksPlatform::getMailService();
-		$mailer = null; // lazy load
-    		
-		$settings = DevblocksPlatform::getPluginSettingsService();
-		@$default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM,CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
-		@$default_personal = DevblocksPlatform::importGPC($_POST['default_reply_personal'],'string',$settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL,CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL));
-
-		if(null == ($ticket = DAO_Ticket::get($ticket_id)))
-			return;
-
-		// (Action) Forward E-mail:
+		$worker_id = $event->params['worker_id'];
+		$context = $event->params['context'];
+		$ticket_id = $event->params['context_id'];
 		
+        $mail_service = DevblocksPlatform::getMailService();
+        $mailer = null; // lazy load
+        
+        $settings = DevblocksPlatform::getPluginSettingsService();
+        $default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM, CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
+        $default_personal = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL, CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL);
+
+        $ticket = DAO_Ticket::get($ticket_id);
+        
 		// Sanitize and combine all the destination addresses
-		$next_worker = DAO_Worker::get($ticket->next_worker_id);
-		$notify_emails = $next_worker->email;
-		
+		$next_worker = DAO_Worker::get($worker_id);
+        $notify_emails = $next_worker->email;
+			
 		if(empty($notify_emails))
 			return;
 			
-		if(null == (@$last_message = end($ticket->getMessages()))) { /* @var $last_message CerberusMessage */
-			continue;
-		}
-		
-		if(null == (@$last_headers = $last_message->getHeaders()))
-			continue;
+        $messages = DAO_Message::getMessagesByTicket($ticket_id);			
+		$message = end($messages); // last message
+		$message_headers = $message->getHeaders();
+		unset($messages);
 			
 		$reply_to = $default_from;
 		$reply_personal = $default_personal;
-			
+				
 		// See if we need a group-specific reply-to
 		if(!empty($ticket->team_id)) {
 			@$group_from = DAO_GroupSettings::get($ticket->team_id, DAO_GroupSettings::SETTING_REPLY_FROM);
 			if(!empty($group_from))
 				$reply_to = $group_from;
-				
+					
 			@$group_personal = DAO_GroupSettings::get($ticket->team_id, DAO_GroupSettings::SETTING_REPLY_PERSONAL);
 			if(!empty($group_personal))
 				$reply_personal = $group_personal;
 		}
-		
+			
 		try {
 			if(null == $mailer)
 				$mailer = $mail_service->getMailer(CerberusMail::getMailerDefaults());
-				
-			// Create the message
-			
+					
+		 	// Create the message
+
 			$mail = $mail_service->createMessage();
 			$mail->setTo(array($notify_emails));
 			$mail->setFrom(array($reply_to => $reply_personal));
 			$mail->setReplyTo($reply_to);
-			$mail->setSubject(sprintf("[RW: comment #%s]: %s [comment]",
+			$mail->setSubject(sprintf("[Ticket Assignment #%s]: %s",
 				$ticket->mask,
 				$ticket->subject
 			));
+				
+			$hdrs = $mail->getHeaders();
+				
+			$hdrs->removeAll('references');
+            $hdrs->removeAll('in-reply-to');
+            if(isset($message_headers['in-reply-to'])) {
+                @$in_reply_to = $message_headers['in-reply-to'];
+			    $hdrs->addTextHeader('References', $in_reply_to);
+			    $hdrs->addTextHeader('In-Reply-To', $in_reply_to);
+			} else {
+                @$msgid = $message_headers['message-id'];
+			    $hdrs->addTextHeader('References', $msgid);
+			    $hdrs->addTextHeader('In-Reply-To', $msgid);
+            }
+				
+			$hdrs->addTextHeader('X-Mailer','Cerberus Helpdesk (Build '.APP_BUILD.')');
+			$hdrs->addTextHeader('Precedence','List');
+			$hdrs->addTextHeader('Auto-Submitted','auto-generated');
+				
+			$mail->setBody($message->getContent());					
+				
+			$result = $mailer->send($mail);
+					
+		} catch(Exception $e) {
+            echo "Ticket Email Notification failed to send<br>";
+		}
+	}
+    
+	private function _workerAssignedTask($event) {
+		$translate = DevblocksPlatform::getTranslationService();
+		$events = DevblocksPlatform::getEventService();
+
+		$worker_id = $event->params['worker_id'];
+		$context = $event->params['context'];
+		$task_id = $event->params['context_id'];
+		
+        $mail_service = DevblocksPlatform::getMailService();
+        $mailer = null; // lazy load
+        
+        $settings = DevblocksPlatform::getPluginSettingsService();
+        $reply_to = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM, CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
+        $reply_personal = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL, CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL);
+
+        $task = DAO_Task::get($task_id);
+        
+		// Sanitize and combine all the destination addresses
+		$next_worker = DAO_Worker::get($worker_id);
+        $notify_emails = $next_worker->email;
 			
+		if(empty($notify_emails))
+			return;
+			
+		try {
+			if(null == $mailer)
+				$mailer = $mail_service->getMailer(CerberusMail::getMailerDefaults());
+					
+
+
+		 	// Create the message
+			$mail = $mail_service->createMessage();
+			$mail->setTo(array($notify_emails));
+			$mail->setFrom(array($reply_to => $reply_personal));
+			$mail->setReplyTo($reply_to);
+			$mail->setSubject(sprintf("[Task Assignment #%d]: %s",
+				$task->id,
+				$task->title
+			));
+				
 			$headers = $mail->getHeaders();
-			
-			if(false !== (@$in_reply_to = $last_headers['in-reply-to'])) {
-				$headers->addTextHeader('References', $in_reply_to);
-				$headers->addTextHeader('In-Reply-To', $in_reply_to);
-			}
-				
-			// Build the body
-			$comment_text = sprintf("%s (%s) comments:\r\n%s\r\n",
-				$worker->getName(),
-				$address->email,
-				$comment
-			);
-				
+            
 			$headers->addTextHeader('X-Mailer','Cerberus Helpdesk (Build '.APP_BUILD.')');
 			$headers->addTextHeader('Precedence','List');
 			$headers->addTextHeader('Auto-Submitted','auto-generated');
 				
-			$mail->setBody($comment_text);
-			
+            $body = sprintf("[Task Assignment #%d]: %s",
+				$task->id,
+				$task->title
+			);
+            $mft = DevblocksPlatform::getExtension($context, false, true);
+            $ext = $mft->createInstance();	
+			$url = $ext->getPermalink($task_id);
+            $body .= "\r\n" . $url;
+            // Comments
+            $comments = DAO_Comment::getByContext(CerberusContexts::CONTEXT_TASK, $task_id);
+            foreach($comments as $comment_id => $comment) {
+                $address = DAO_Address::get($comment->address_id);
+                $body .= "\r\nCommented By: " . $address->first_name . " " . $address->last_name;
+                $body .= "\r\n" . $comment->comment;
+            }
+            unset($comments);
+            $body .= "\r\n";
+            $mail->setBody($body);
+				
 			$result = $mailer->send($mail);
-				
+					
 		} catch(Exception $e) {
-			if(!empty($message_id)) {
-				$fields = array(
-					DAO_MessageNote::MESSAGE_ID => $message_id,
-					DAO_MessageNote::CREATED => time(),
-					DAO_MessageNote::WORKER_ID => 0,
-					DAO_MessageNote::CONTENT => 'Exception thrown while sending watcher email: ' . $e->getMessage(),
-					DAO_MessageNote::TYPE => Model_MessageNote::TYPE_ERROR,
-				);
-				DAO_MessageNote::create($fields);
-			}
-		}
-	}
-
-	private function _workerAssigned($event) {
-		@$ticket_ids = $event->params['ticket_ids'];
-		@$changed_fields = $event->params['changed_fields'];
-    	
-		if(empty($ticket_ids) || empty($changed_fields))
-			return;
-
-		@$next_worker_id = $changed_fields[DAO_Ticket::NEXT_WORKER_ID];
-
-		// Make sure a next worker was assigned
-		if(empty($next_worker_id))
-			return;
-
-		$url_writer = DevblocksPlatform::getUrlService();
-    	
-		$mail_service = DevblocksPlatform::getMailService();
-		$mailer = null; // lazy load
-    		
-		$settings = DevblocksPlatform::getPluginSettingsService();
-		$default_from = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM, CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
-		$default_personal = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_PERSONAL, CerberusSettingsDefaults::DEFAULT_REPLY_PERSONAL);
-
-		// Loop through all assigned tickets
-		$tickets = DAO_Ticket::getTickets($ticket_ids);
-		foreach($tickets as $ticket) { /* @var $ticket CerberusTicket */
-			// If the next worker value didn't change, skip
-			if($ticket->next_worker_id == $next_worker_id)
-				continue;
-			
-			// Sanitize and combine all the destination addresses
-			$next_worker = DAO_Worker::get($next_worker_id);
-			$notify_emails = $next_worker->email;
-			
-			if(empty($notify_emails))
-				return;
-				
-			if(null == (@$last_message = end($ticket->getMessages()))) { /* @var $last_message CerberusMessage */
-				continue;
-			}
-			
-			if(null == (@$last_headers = $last_message->getHeaders()))
-				continue;
-				
-			$reply_to = $default_from;
-			$reply_personal = $default_personal;
-				
-			// See if we need a group-specific reply-to
-			if(!empty($ticket->team_id)) {
-				@$group_from = DAO_GroupSettings::get($ticket->team_id, DAO_GroupSettings::SETTING_REPLY_FROM);
-				if(!empty($group_from))
-					$reply_to = $group_from;
-					
-				@$group_personal = DAO_GroupSettings::get($ticket->team_id, DAO_GroupSettings::SETTING_REPLY_PERSONAL);
-				if(!empty($group_personal))
-					$reply_personal = $group_personal;
-			}
-			
-			try {
-				if(null == $mailer)
-					$mailer = $mail_service->getMailer(CerberusMail::getMailerDefaults());
-					
-			 	// Create the message
-
-				$mail = $mail_service->createMessage();
-				$mail->setTo(array($notify_emails));
-				$mail->setFrom(array($reply_to => $reply_personal));
-				$mail->setReplyTo($reply_to);
-				$mail->setSubject(sprintf("[RW: assignment #%s]: %s",
-					$ticket->mask,
-					$ticket->subject
-				));
-				
-				$headers = $mail->getHeaders();
-				
-				if(false !== (@$in_reply_to = $last_headers['in-reply-to'])) {
-					$headers->addTextHeader('References', $in_reply_to);
-					$headers->addTextHeader('In-Reply-To', $in_reply_to);
-				}
-					
-				$headers->addTextHeader('X-Mailer','Cerberus Helpdesk (Build '.APP_BUILD.')');
-				$headers->addTextHeader('Precedence','List');
-				$headers->addTextHeader('Auto-Submitted','auto-generated');
-					
-				$mail->setBody($last_message->getContent());					
-				
-				$result = $mailer->send($mail);
-					
-			} catch(Exception $e) {
-/*				if(!empty($message_id)) {
-					$fields = array(
-						DAO_MessageNote::MESSAGE_ID => $message_id,
-						DAO_MessageNote::CREATED => time(),
-						DAO_MessageNote::WORKER_ID => 0,
-						DAO_MessageNote::CONTENT => 'Exception thrown while sending watcher email: ' . $e->getMessage(),
-						DAO_MessageNote::TYPE => Model_MessageNote::TYPE_ERROR,
-					);
-					DAO_MessageNote::create($fields);
-				}
-*/
-			}
+            echo "Task Email Notification failed to send<br>";
 		}
 	}
         
@@ -251,19 +202,23 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 		// (Action) Forward Email To:
 		
 		// Sanitize and combine all the destination addresses
-		$next_worker = DAO_Worker::get($ticket->next_worker_id);
-		$notify_emails = $next_worker->email;
-			
-		if(empty($notify_emails))
+		$context_workers = CerberusContexts::getWorkers(CerberusContexts::CONTEXT_TICKET, $ticket->id);
+		if(!is_array($context_workers))
 			return;
-		
+		foreach($context_workers as $next_worker) {
+			$notify_emails = $next_worker->email;
+			
+			if(empty($notify_emails))
+				continue;
+		}
+
 		// [TODO] This could be more efficient
 		$messages = DAO_Message::getMessagesByTicket($ticket_id);
 		$message = end($messages); // last message
 		unset($messages);
 		$headers = $message->getHeaders();
 			
-		// The whole flipping Swift section needs wrapped to catch exceptions
+			// The whole flipping Swift section needs wrapped to catch exceptions
 		try {
 			$settings = DevblocksPlatform::getPluginSettingsService();
 			$reply_to = $settings->get('cerberusweb.core',CerberusSettings::DEFAULT_REPLY_FROM,CerberusSettingsDefaults::DEFAULT_REPLY_FROM);
@@ -287,7 +242,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 			if(isset($headers['return-path']) && $headers['return-path'] == '<>')
 				return;
 				
-			// Ignore bounces
+				// Ignore bounces
 			if($sender_split[0]=="postmaster" || $sender_split[0] == "mailer-daemon")
 				return;
 			
@@ -302,7 +257,7 @@ class Cerb5blogRequiredWatchersEventListener extends DevblocksEventListenerExten
 			foreach($attachments as $attachment) {
 				if(0 == strcasecmp($attachment->display_name,'original_message.html'))
 					continue;
-					
+				
 				$attachment_path = APP_STORAGE_PATH . '/attachments/'; // [TODO] This is highly redundant in the codebase
 				if(!file_exists($attachment_path . $attachment->filepath))
 					continue;

@@ -65,11 +65,11 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
      */
     function handleEvent(Model_DevblocksEvent $event) {
         switch($event->id) {
-            case 'ticket.comment.create':
+            case 'comment.action.create':
               $this->newTicketComment($event);
               break;
 
-            case 'ticket.property.pre_change':
+            case 'dao.ticket.update':
             	break;
 
             case 'ticket.reply.inbound':
@@ -78,7 +78,7 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
             case 'ticket.reply.outbound':
             	break;
 
-            case 'ticket.merge':
+            case 'ticket.action.merge':
               $this->mergeTicket($event);
             	break;
         }
@@ -88,14 +88,18 @@ class Cerb5BlogLastActionAndAuditLogEventListener extends DevblocksEventListener
 		DevblocksPlatform::getExtensions('cerberusweb.ticket.tab', true);
 		// ticket_comment.id
 		@$comment_id = $event->params['comment_id'];
-		// ticket.id
-		@$ticket_id = $event->params['ticket_id'];
-		// address.id
+		// Event context
+		@$context = $event->params['context'];
+		// ticket.id if context == ticket.
+		@$$ticket_id = $event->params['context_id'];
 		@$address_id = $event->params['address_id'];
 		// text of actual comment.
 		@$comment_text = $event->params['comment'];
 
-		if(empty($ticket_id) || empty($address_id) || empty($comment_text))
+        if(CerberusContexts::CONTEXT_TICKET != $context)
+            return;
+            
+        if(empty($ticket_id) || empty($address_id) || empty($comment_text))
 			return;
 
 		$settings = DevblocksPlatform::getPluginSettingsService();

@@ -28,8 +28,7 @@
 				<!-- E-mail Event Listener -->
 				<param key="events">
 					<value>
-						<data key="ticket.comment.create" />
-						<data key="ticket.property.pre_change" />
+						<data key="context_link.assigned" />
 						<data key="ticket.reply.inbound" />
 						<data key="ticket.reply.outbound" />						
 					</value>
